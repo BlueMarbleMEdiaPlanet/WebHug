@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hugging Face Tub</title>
+</head>
+<style>
+    *{
+        margin: 0;
+        padding: 0;
+    }
+
+    body {
+        display: grid;
+        place-items: center;
+    }
+</style>
+<body>
+
+    <h1>Hugging Face Tub</h1>
+
+    <h2>Select image</h2>
+    <input type="file" id="ImageInput" accept="image/*" >
+
+    <br>
+
+    <img src="#" id="preview" alt="img" >
+
+    <h2 id="result"></h2>
+
+<script>
+
+    url = 'https://api-inference.huggingface.co/models/milaO/od'
+    let token 
+    document.getElementById("preview").style.display = "none";
+
+    fetch('./config.json')
+    .then(response => response.json())
+    .then(config => {
+        token = config.token
+
+        document.getElementById("ImageInput").addEventListener("change", function(event) {
+            let max = 0
+            let res
+
+            const file=event.target.files[0]
+            const reader = new FileReader()
+            // reader.readAsDataURL(file)
+            
+            reader.addEventListener("load", ()=> {
+                document.getElementById("preview").setAttribute("src", reader.result)
+                document.getElementById("preview").style.display = "block";
+
+            })
+
+            reader.readAsDataURL(file)
+
+            reader.onloadend=()=>{
+                const data={
+                    inputs:{
+                        image: reader.result.split(',')[1]
+                    }
+                }
+
+                // console.log(reader.result)
+
+            fetch(url, {
+                method: "POST",
+                headers: { 
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data)
+                // data = data[0]
+                for (let i = 0; i < data.length; i++) {
+                    if (data[i].score > max) {
+                        max = data[i].score
+                        res = data[i].label
+                    }
+                }
+                document.getElementById("result").innerHTML = res
+            })
+            
+            .catch((error) => {
+                console.error('Error:', error);
+            });
+        }
+
+
+        })
+    })
+
+</script>
+</body>
+</html>
